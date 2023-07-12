@@ -60,15 +60,15 @@ int main(int argc, char **argv)
     }
 
     // Create a raw socket(TCP socket only)
-    raw_sock = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
+    raw_sock = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (raw_sock == -1)
     {
         perror("Unable to create raw socket");
         return 1;
     }
 
-    bind_using_iface_ip(raw_sock, "192.168.240.2", 80);
-    bind_using_iface_name(raw_sock, "ens19");
+    bind_using_iface_ip(raw_sock, "192.168.31.231", 80);
+    bind_using_iface_name(raw_sock, "ens18");
 
     // Ensure that a SIGINT will cause a gracefully exit.
     // Any other signal may not correctly free allocated resources
@@ -175,7 +175,6 @@ void decode_packet(unsigned char *buf, size_t length, FILE *lf)
     fprintf(lf, "Payload DATA\n");
     print_content(buf + ip_head_len + tcp_head->doff * 4, (length - tcp_head->doff * 4 - ip_head->ihl * 4), lf);
 
-    // We print to stderr since it is not buffered
     printf("Captured %d TCP packet(s) || Size %d Byte\r", ++packet_count, sum);
 }
 
