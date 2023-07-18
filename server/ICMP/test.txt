@@ -3712,7 +3712,7 @@ ICMP header
 
 			 ..::: DATA :::..
 IP header DATA
-     45 00 00 54 D2 D1 40 00 40 01 06 80 C0 A8 F0 03          E..T..@.@..€....
+     45 00 00 54 D2 D1 40 00 40 01 06 80 C0 A8 F0 03          E..T..@.@..ï¿½....
      C0 A8 F0 02                                                                  
 ICMP header DATA
      08 00                                                                  ..

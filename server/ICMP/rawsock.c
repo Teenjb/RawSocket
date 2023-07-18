@@ -163,9 +163,9 @@ void decode_packet(int fd, unsigned char *buf, size_t length, FILE *lf)
     fprintf(lf, "   checksum             : %u\n", ntohl(icmp_head->checksum));
     fprintf(lf, "\n\t\t\t ..::: DATA :::..\n");
 
-    // Print IP header content
-    fprintf(lf, "IP header DATA\n");
-    print_content(buf, ip_head_len, lf);
+    // // Print IP header content
+    // fprintf(lf, "IP header DATA\n");
+    // print_content(buf, ip_head_len, lf);
 
     // Print ICMP header content
     fprintf(lf, "ICMP header DATA\n");
