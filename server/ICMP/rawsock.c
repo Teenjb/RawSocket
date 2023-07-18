@@ -18,12 +18,20 @@
  */
 
 #define BUF_SIZE 65536
+#define PING_PKT_S 64
 
-static void decode_packet(unsigned char *buf, size_t length, FILE *lf);
+struct ping_pkt
+{
+    struct icmphdr hdr;
+    char msg[PING_PKT_S-sizeof(struct icmphdr)];
+};
+
+static void decode_packet(int fd, unsigned char *buf, size_t length, FILE *lf);
 static void print_content(unsigned char *buf, size_t length, FILE *lf);
 static void create_statistics(FILE *lf, int paket_count, int sum);
 int bind_using_iface_ip(int fd, char *ipaddr, uint16_t port);
 int bind_using_iface_name(int fd, char *iface_name);
+int reply_icmp_packet(int fd, struct sockaddr_in *dest_addr, unsigned char *buf, size_t length);
 
 FILE *log_file;
 static int packet_count = 0;
@@ -87,7 +95,7 @@ int main(int argc, char **argv)
             return 1;
         }
         // Extract information from raw packages and print them
-        decode_packet(buf, psize, log_file);
+        decode_packet(raw_sock, buf, psize, log_file);
     }
 
     return 0;
@@ -114,9 +122,9 @@ void create_statistics(FILE *lf, int paket_count, int sum){
 }
 
 // Decode function, used to print TCP/IP header and payload
-void decode_packet(unsigned char *buf, size_t length, FILE *lf)
+void decode_packet(int fd, unsigned char *buf, size_t length, FILE *lf)
 {
-    fprintf(lf, "\n\n################### TCP PACKET ###################");
+    fprintf(lf, "\n\n################### ICMP PACKET ###################");
     // Print IP header first
     struct iphdr *ip_head = (struct iphdr *)buf;
     struct sockaddr_in ip_source, ip_dest;
@@ -130,6 +138,8 @@ void decode_packet(unsigned char *buf, size_t length, FILE *lf)
 
     ip_source.sin_addr.s_addr = ip_head->saddr; // Get source IP address
     ip_dest.sin_addr.s_addr = ip_head->daddr;   // Get destination IP address
+
+    reply_icmp_packet(fd, &ip_source, buf, length);
 
     fprintf(lf, "\nIP header\n");
     fprintf(lf, "   Version              : %d\n", (unsigned int)ip_head->version);
@@ -157,13 +167,13 @@ void decode_packet(unsigned char *buf, size_t length, FILE *lf)
     fprintf(lf, "IP header DATA\n");
     print_content(buf, ip_head_len, lf);
 
-    // Print TCP header content
-    fprintf(lf, "TCP header DATA\n");
-    print_content(buf + ip_head_len, icmp_head-> * 4, lf);
+    // Print ICMP header content
+    fprintf(lf, "ICMP header DATA\n");
+    print_content(buf + ip_head_len, sizeof(icmp_head) >> 2, lf);
 
-    // Print PAYLOAD content
-    fprintf(lf, "Payload DATA\n");
-    print_content(buf + ip_head_len + tcp_head->doff * 4, (length - tcp_head->doff * 4 - ip_head->ihl * 4), lf);
+    // // Print PAYLOAD content
+    // fprintf(lf, "Payload DATA\n");
+    // print_content(buf + ip_head_len + tcp_head->doff * 4, (length - tcp_head->doff * 4 - ip_head->ihl * 4), lf);
 
     // We print to stderr since it is not buffered
     printf("Captured %d TCP packet(s) || Size %d Byte\r", ++packet_count, sum);
@@ -210,4 +220,22 @@ void print_content(unsigned char *buf, size_t length, FILE *lf)
             fprintf(lf, "\n");
         }
     }
+}
+
+int reply_icmp_packet(int fd, struct sockaddr_in *dest_addr, unsigned char *buf, size_t length) {
+    struct iphdr *ip_header = (struct iphdr *)buf;
+    struct icmphdr *icmp_header = (struct icmphdr *)(buf + (ip_header->ihl * 4));
+    if (icmp_header->type == ICMP_ECHO) {
+        // Construct ICMP reply packet
+        unsigned char reply_buf[length];
+        memcpy(reply_buf, buf, length);
+        struct iphdr *reply_ip_header = (struct iphdr *)reply_buf;
+        struct icmphdr *reply_icmp_header = (struct icmphdr *)(reply_buf + (reply_ip_header->ihl * 4));
+        reply_icmp_header->type = ICMP_ECHOREPLY;
+        reply_icmp_header->checksum = 0;
+        reply_icmp_header->checksum = htons(~(ICMP_ECHOREPLY << 8));
+        // Send ICMP reply packet
+        return sendto(fd, reply_buf, length, 0, (struct sockaddr *)dest_addr, sizeof(struct sockaddr_in));
+    }
+    return -1;
 }
