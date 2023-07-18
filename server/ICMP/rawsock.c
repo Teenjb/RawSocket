@@ -153,17 +153,17 @@ void decode_packet(unsigned char *buf, size_t length, FILE *lf)
     fprintf(lf, "   checksum             : %u\n", ntohl(icmp_head->checksum));
     fprintf(lf, "\n\t\t\t ..::: DATA :::..\n");
 
-    // Print IP header content
-    fprintf(lf, "IP header DATA\n");
-    print_content(buf, ip_head_len, lf);
+    // // Print IP header content
+    // fprintf(lf, "IP header DATA\n");
+    // print_content(buf, ip_head_len, lf);
 
-    // Print TCP header content
-    fprintf(lf, "TCP header DATA\n");
-    print_content(buf + ip_head_len, icmp_head-> * 4, lf);
+    // // Print TCP header content
+    // fprintf(lf, "TCP header DATA\n");
+    // print_content(buf + ip_head_len, icmp_head-> * 4, lf);
 
-    // Print PAYLOAD content
-    fprintf(lf, "Payload DATA\n");
-    print_content(buf + ip_head_len + tcp_head->doff * 4, (length - tcp_head->doff * 4 - ip_head->ihl * 4), lf);
+    // // Print PAYLOAD content
+    // fprintf(lf, "Payload DATA\n");
+    // print_content(buf + ip_head_len + tcp_head->doff * 4, (length - tcp_head->doff * 4 - ip_head->ihl * 4), lf);
 
     // We print to stderr since it is not buffered
     printf("Captured %d TCP packet(s) || Size %d Byte\r", ++packet_count, sum);
